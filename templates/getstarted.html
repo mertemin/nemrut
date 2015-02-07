@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+{% block body %}
+
+{% include 'navbar.html' %}
+{% include 'header.html' %}
+
+<div class="container">
+	<div class="row">
+		<div class="col-lg-6 col-lg-offset-3 col-md-8 col-md-offset-2">
+			<div class="post-preview">
+				<form method="POST" action="">
+					<div class="form-group">
+						<label for="username">Username</label>
+						<input type="text" pattern=".{4,10}" required title="4 to 10 characters/numbers" class="form-control" id="username" name="username" placeholder="Enter a username" />
+						<p class="help-block">Your blog posts will be available at www.mahya.com/user/{your-username}</p>
+					</div>
+					<div class="form-group">
+						<label for="name">Name</label>
+						<input type="text" pattern=".{5,255}" required title="At least 5 characters" class="form-control" id="name" name="name" placeholder="Enter your name" />
+						<p class="help-block">Your blog posts will be available at www.mahya.com/user/{your-username}</p>
+					</div>
+					<div class="form-group">
+						<label for="agreement"><input type="checkbox" required name="agreement" id="agreement"> I understand that a folder will be created in my OneDrive and the files there will be available publicly through blog posts.</label>
+					</div>
+					<button type="submit" class="btn btn-default pull-right">Register</button>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>
+
+{% endblock %}

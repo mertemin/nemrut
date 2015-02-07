@@ -1,0 +1,6 @@
+{% for file in files %}
+<div class="post-preview">
+	<a href="/post/{{ subtitle }}/{{ file["name"] }}"><h2 class="post-title">{{ file["name"] }}</h2></a>
+	<h5>Last updated at <i>{{ file["updated_time"] }}</i></h5>
+</div>
+{% endfor %}

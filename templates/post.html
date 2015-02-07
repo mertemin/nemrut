@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% block body %}
+
+{% include 'navbar.html' %}
+
+<header class="intro-header" style="background-image: url('/static/img/bg.jpg')">
+	<div class="container">
+		<div class="row">
+			<div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+				<div class="site-heading">
+					<h1>{{ title }}</h1>
+					<hr class="small">
+					<span class="subheading">by <a href="/user/{{ username }}">{{ name }}</a></span>
+				</div>
+			</div>
+		</div>
+	</div>
+</header>
+
+<div class="container">
+	<div class="row">
+		<div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+			<div class="post-preview">
+			{% if content %}
+				<p>{{ content }}</p>
+			{% else %}
+				<p>There is a problem.</p>
+			{% endif %}
+				<p>Last updated at {{ time }}</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+{% endblock %}

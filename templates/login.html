@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+{% block body %}
+	<!-- Header -->
+    <header id="top" class="header">
+        <div class="text-vertical-center">
+            <h1>Easy, one-click blogs with <b>nemrut</b></h1>
+            <h3>One click blog from your OneDrive</h3>
+			{% if login_url %}
+				<a href="{{ login_url }}" class="btn btn-dark btn-lg">Login with <i class="fa fa-windows"></i></a>
+			{% endif %}
+        </div>
+    </header>
+
+    <!-- About -->
+    <section id="about" class="about">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12 text-center">
+                    <h2>nemrut lets you create blog posts right from your OneDrive folder.</h2>
+                    <p class="lead">Your text files turns into beautiful blog posts in seconds.</p>
+                </div>
+            </div>
+            <!-- /.row -->
+        </div>
+        <!-- /.container -->
+    </section>
+
+    <!-- Services -->
+    <!-- The circle icons use Font Awesome's stacked icon classes. For more information, visit http://fontawesome.io/examples/ -->
+    <section id="services" class="services bg-primary">
+        <div class="container">
+            <div class="row text-center">
+                <div class="col-lg-10 col-lg-offset-1">
+                    <div class="row">
+                        <div class="col-md-3 col-sm-6">
+                            <div class="service-item">
+                                <span class="fa-stack fa-4x">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-cloud fa-stack-1x text-primary"></i>
+                            </span>
+                                <h4>
+                                    <strong>Powered by OneDrive</strong>
+                                </h4>
+                                <p>Your files, your OneDrive, served from nemrut.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="service-item">
+                                <span class="fa-stack fa-4x">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-unlock fa-stack-1x text-primary"></i>
+                            </span>
+                                <h4>
+                                    <strong>Passwordless</strong>
+                                </h4>
+                                <p>No password is needed. You login by clicking.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="service-item">
+                                <span class="fa-stack fa-4x">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-pencil-square-o fa-stack-1x text-primary"></i>
+                            </span>
+								<h4>
+                                    <strong>Your Favorite Editor</strong>
+                                </h4>
+                                <p>Create articles with your favorite editor. It's up to you.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="service-item">
+                                <span class="fa-stack fa-4x">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-file-text-o fa-stack-1x text-primary"></i>
+                            </span>
+                                <h4>
+                                    <strong>Markdown Support</strong>
+                                </h4>
+                                <p>You think Markdown is cool? It is supported too.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.row (nested) -->
+                </div>
+                <!-- /.col-lg-10 -->
+            </div>
+            <!-- /.row -->
+        </div>
+        <!-- /.container -->
+    </section>
+{% endblock %}
