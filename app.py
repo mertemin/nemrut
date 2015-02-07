@@ -150,7 +150,9 @@ def process_folder_response(response, access_token):
 	for file in response["data"]:
 		#print json.dumps(file, indent = 4)
 		if file["type"] == "file" and "name" in file and (file["name"].endswith(".txt") or file["name"].endswith(".md")):
-			files.append({'name': file["name"][:-4] if file["name"].endswith(".txt") else file["name"][:-3], \
+			file_extension_length = -4 if file["name"].endswith(".txt") else 0
+			file_extension_length = -3 if file["name"].endswith(".md") else 0
+			files.append({'name': file["name"][:file_extension_length], \
 				'link': file["upload_location"], \
 				'updated_time': file["updated_time"], #datetime.strftime("%Y-%d-T%H:%M", file["updated_time"]), \ #2015-01-15T20:10:00+0000
 				'content': read_file(file['upload_location'], access_token) })

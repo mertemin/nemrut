@@ -233,6 +233,16 @@ form > div {
   color: #ddd;
   text-decoration: none;
 }
+@media only screen and (max-width: 768px) {
+  .intro-header .site-heading,
+  .intro-header .site-heading a {
+    color: #333;
+  }
+
+  .intro-header .site-heading a:hover {
+    color: #111;
+  }
+}
 @media only screen and (min-width: 768px) {
   .intro-header .site-heading h1,
   .intro-header .page-heading h1 {
