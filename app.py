@@ -88,7 +88,7 @@ def read(username, title):
 		user = users[0]
 		for file in user['files']:
 			if file['name'] == title:
-				return render_template("post.html", content = Markup(markdown.markdown(file['content'])), title = file['name'], time = file['updated_time'], username = user['username'], name = user['name'])
+				return render_template("post.html", content = Markup(markdown.markdown(file['content'])), title = file['name'], time = file['updated_time'], username = user['username'], subtitle = user['name'])
 	
 	return error_page(404, "Content cannot be found")
 
@@ -149,10 +149,9 @@ def process_folder_response(response, access_token):
 	
 	for file in response["data"]:
 		#print json.dumps(file, indent = 4)
-		if file["type"] == "file" and "name" in file and (file["name"].endswith(".txt") or file["name"].endswith(".md")):
-			file_extension_length = -4 if file["name"].endswith(".txt") else 0
-			file_extension_length = -3 if file["name"].endswith(".md") else 0
-			files.append({'name': file["name"][:file_extension_length], \
+		if file["type"] == "file" and "name" in file:
+			file_name, file_extension = os.path.splitext(file["name"])
+			files.append({'name': file_name, \
 				'link': file["upload_location"], \
 				'updated_time': file["updated_time"], #datetime.strftime("%Y-%d-T%H:%M", file["updated_time"]), \ #2015-01-15T20:10:00+0000
 				'content': read_file(file['upload_location'], access_token) })
