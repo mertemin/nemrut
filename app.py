@@ -1,6 +1,5 @@
-import os
-from flask import current_app, Flask, jsonify, Markup, redirect, render_template, redirect, request, session, url_for
-import json, logging, markdown, urllib, urllib2, pymongo
+from flask import current_app, flash, Flask, jsonify, Markup, redirect, render_template, redirect, request, session, url_for
+import os, json, logging, markdown, urllib, urllib2, pymongo
 from bson.objectid import ObjectId
 from datetime import datetime
 
@@ -14,7 +13,6 @@ settings = {
 	"LOGIN_URL_FORMAT": 'https://login.live.com/oauth20_authorize.srf?client_id=%s&scope=%s&response_type=code&redirect_uri=%s', "SDK_URL_FORMAT": "https://apis.live.net/v5.0/%s",
 	"MONGODB_URI": "mongodb://crowdy:crowdy@ds045157.mongolab.com:45157/crowdy"
 }
-#'client_id=%s&redirect_uri=%s&client_secret=%s&code=%s&grant_type=%s'
 
 logging.basicConfig(level = logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -45,13 +43,12 @@ def logout():
 
 @app.route("/get-started", methods=['GET', 'POST'])
 def get_started():
-	print session
 	if request.method == 'POST':
-		[succedded, message] = register(request.form.get('username', ''), request.form.get('name', ''))
+		[succedded, message] = register(request.form.get('username', ''), request.form.get('name', ''), request.form.get('agreement', False))
 		if succedded:
 			return redirect(url_for('home'))
 		else:
-			return error_page(100, message)
+			flash(message)
 	
 	return render_template("getstarted.html", title = "Getting Started", subtitle = "It looks like this is your first time. Let's get some details about you...")
 	
@@ -92,9 +89,7 @@ def read(username, title):
 	
 	return error_page(404, "Content cannot be found")
 
-###
-# # Live SDK related methods
-###
+### ### ### ### ### Live SDK related methods ### ### ### ### ###
 def create_auth_request(request):
 	logger.info('Auth is requested')
 
@@ -166,9 +161,7 @@ def read_file(file_link, access_token):
 		return response
 	return error_page(response["code"], response["message"])
 
-###
-# # Request utilities
-###
+### ### ### ### ### Request utilities ### ### ### ### ###
 def make_request(request, raw = False):
 	try:
 		logger.info('Making a request %s', request)
@@ -182,13 +175,21 @@ def make_request(request, raw = False):
 	except urllib2.URLError, e:
 		return [False, {"code": e.code, "message": e.read()}]
 
-def register(username, name):
+def register(username, name, agreed):
 	logger.info('Trying to register for user_id %s, username %s and name %s', username, name)
 	if not(session['user_id']):
 		return [False, 'There is a problem with user account. Please try logging again by going to homepage.']
-		
+	
+	if not(agreed):
+		return [False, 'You need to agree the terms.']
+	if len(username) < 4 and len(name) < 5:
+		return [False, 'Please check the values entered for username and name.']
+
 	logger.info('Trying to register username %s and name %s for user_id %s', username, name, session['user_id'])
 	if username and name:
+		if is_username_registered(username):
+			return [False, 'Username is already in use. Please select another username and try again.']
+
 		logger.info('Registering user_id %s, username %s and name %s', session['user_id'], username, name)
 		session['username'] = username
 		session['name'] = name
@@ -199,9 +200,8 @@ def register(username, name):
 			return [False, 'An error occured while registering the user. Please try again later.']
 	else:
 		return [False, 'There is a problem with username or password']
-###
-# # User related methods
-###	
+
+### ### ### ### ###  User related methods ### ### ### ### ###
 def is_user_registered(user_id, access_token):
 	logger.info('Login is requested for user_id %s', user_id)
 	session['user_id'] = user_id
@@ -220,6 +220,10 @@ def is_user_registered(user_id, access_token):
 	logger.info('user_id %s is not yet registered', user_id)
 	return False
 
+def is_username_registered(username):
+	users = db.find({ 'username': username })
+	return users.count() > 0
+
 def save_files(user_id, files):
 	result = db.insert({ 'user_id': user_id, 'username': username, 'name': name })
 	print result
@@ -232,9 +236,7 @@ def save_user(user_id, username, name):
 		return True
 	return False
 
-###
-# # Helpers
-###	
+### ### ### ### ### Helpers ### ### ### ### ###
 def error_page(code, message):
 	return render_template("error.html", title = '%s Error' % str(code), subtitle = "Something went wrong!", message = message)
 
