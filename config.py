@@ -1,0 +1,12 @@
+DEBUG = False
+SECRET_KEY = 'X2U&692fW}{mWRE"i+y:42WW3S]eQ,'
+NAME = 'nemrut'
+REDIRECT_URI = 'http://nemrutblog.herokuapp.com/login'
+CLIENT_ID = '000000004C12E5C0'
+CLIENT_SECRET = 'MkwlvYWZv26ycAkv3J5uzquCbcsLQL5f'
+CLIENT_SCOPE = 'wl.skydrive,wl.skydrive_update'
+AUTH_URL = 'https://login.live.com/oauth20_token.srf'
+GRANT_TYPE = 'authorization_code'
+LOGIN_URL_FORMAT = 'https://login.live.com/oauth20_authorize.srf?client_id=%s&scope=%s&response_type=code&redirect_uri=%s'
+SDK_URL_FORMAT = 'https://apis.live.net/v5.0/%s'
+MONGODB_URI = 'mongodb://crowdy:crowdy@ds045157.mongolab.com:45157/crowdy'
