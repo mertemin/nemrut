@@ -8,7 +8,8 @@ Nemrut is a blog powered by OneDrive. The text and markdown files in OneDrive be
 * **v0.1** - First commit
 
 ## Technologies Used
-* [Flask](http://www.dartlang.org)
+* [Flask](http://flask.pocoo.org)
+* [pymongo](http://api.mongodb.org/python/current/)
 
 ## License
 The MIT License
