@@ -1,31 +1,23 @@
-from flask import current_app, flash, Flask, jsonify, Markup, redirect, render_template, redirect, request, session, url_for
+from flask import current_app as app, flash, Flask, jsonify, Markup, redirect, render_template, redirect, request, session, url_for
 import os, json, logging, markdown, urllib, urllib2, pymongo
 from bson.objectid import ObjectId
 from datetime import datetime
 
 app = Flask(__name__)
-app.config.update(DEBUG = True, SECRET_KEY = 'X2U&692fW}{mWRE"i+y:42WW3S]eQ,')
-
-settings = {
-	"NAME": "nemrut", "REDIRECT_URI": "http://nemrutblog.herokuapp.com/login",
-	"CLIENT_ID": "000000004C12E5C0", "CLIENT_SECRET": "MkwlvYWZv26ycAkv3J5uzquCbcsLQL5f", "CLIENT_SCOPE": "wl.skydrive,wl.skydrive_update",
-	"AUTH_URL": "https://login.live.com/oauth20_token.srf", "GRANT_TYPE": "authorization_code", 
-	"LOGIN_URL_FORMAT": 'https://login.live.com/oauth20_authorize.srf?client_id=%s&scope=%s&response_type=code&redirect_uri=%s', "SDK_URL_FORMAT": "https://apis.live.net/v5.0/%s",
-	"MONGODB_URI": "mongodb://crowdy:crowdy@ds045157.mongolab.com:45157/crowdy"
-}
+app.config.from_object('config')
 
 logging.basicConfig(level = logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-client = pymongo.MongoClient(settings["MONGODB_URI"])
-client_db = client.get_default_database()
-db = client_db[settings["NAME"]]
+mongo_client = pymongo.MongoClient(app.config["MONGODB_URI"])
+client_db = mongo_client.get_default_database()
+db = client_db[app.config["NAME"]]
 
 @app.route('/')
 def index():
 	if logged_in():
 		return redirect(url_for('home'))
-	return render_template("login.html", login_url = settings["LOGIN_URL_FORMAT"] % (settings["CLIENT_ID"], settings["CLIENT_SCOPE"], settings["REDIRECT_URI"]))
+	return render_template("login.html", login_url = app.config["LOGIN_URL_FORMAT"] % (app.config["CLIENT_ID"], app.config["CLIENT_SCOPE"], app.config["REDIRECT_URI"]))
 
 @app.route('/login')
 def login():
@@ -57,7 +49,7 @@ def home():
 	if not(logged_in()):
 		return redirect(url_for('index'))
 	
-	[succedded, response] = make_request(settings["SDK_URL_FORMAT"] % ('me/skydrive/files?access_token=%s' % session['access_token']))
+	[succedded, response] = make_request(app.config["SDK_URL_FORMAT"] % ('me/skydrive/files?access_token=%s' % session['access_token']))
 	if succedded:
 		[folder_found, file_id, error_msg] = find_app_folder(response)
 		if not(folder_found):
@@ -94,10 +86,10 @@ def create_auth_request(request):
 	logger.info('Auth is requested')
 
 	code = request.args.get('code', '')
-	values = {'client_id': settings["CLIENT_ID"], 'redirect_uri': settings["REDIRECT_URI"], 'client_secret': settings["CLIENT_SECRET"], 'code': code, 'grant_type': settings["GRANT_TYPE"]}
+	values = {'client_id': app.config["CLIENT_ID"], 'redirect_uri': app.config["REDIRECT_URI"], 'client_secret': app.config["CLIENT_SECRET"], 'code': code, 'grant_type': app.config["GRANT_TYPE"]}
 	data = urllib.urlencode(values)
 	headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-	return urllib2.Request(settings["AUTH_URL"], data, headers)
+	return urllib2.Request(app.config["AUTH_URL"], data, headers)
 
 def find_app_folder(data):
 	found = False
@@ -110,7 +102,7 @@ def find_app_folder(data):
 	
 	files = data["data"]
 	for file in files:
-		if "type" in file and file["type"] == "folder" and file["name"] == settings["NAME"]:
+		if "type" in file and file["type"] == "folder" and file["name"] == app.config["NAME"]:
 			file_id = file["id"]
 			found = True
 			break
@@ -120,9 +112,9 @@ def find_app_folder(data):
 	return [found, file_id, error_msg]
 
 def create_app_folder(access_token):
-	data = json.dumps({'name': settings["NAME"]})
+	data = json.dumps({'name': app.config["NAME"]})
 	headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer %s' % access_token}
-	post_request = urllib2.Request(settings["SDK_URL_FORMAT"] % 'me/skydrive', data, headers)
+	post_request = urllib2.Request(app.config["SDK_URL_FORMAT"] % 'me/skydrive', data, headers)
 	
 	[succedded, response] = make_request(post_request)
 	if succedded:
@@ -130,7 +122,7 @@ def create_app_folder(access_token):
 	return error_page(response["code"], response["message"])
 
 def read_app_folder(folder_id, access_token):
-	[succedded, response] = make_request(settings["SDK_URL_FORMAT"] % ('%s/files?access_token=%s' % (folder_id, access_token)))
+	[succedded, response] = make_request(app.config["SDK_URL_FORMAT"] % ('%s/files?access_token=%s' % (folder_id, access_token)))
 	if succedded:
 		files = process_folder_response(response, access_token)
 		#print json.dumps(files, indent = 4)
