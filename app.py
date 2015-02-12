@@ -1,7 +1,6 @@
 from flask import current_app as app, flash, Flask, jsonify, Markup, redirect, render_template, redirect, request, session, url_for
-import os, json, logging, markdown, urllib, urllib2, pymongo
+import os, dateutil.parser, datetime, json, logging, markdown, urllib, urllib2, pymongo
 from bson.objectid import ObjectId
-from datetime import datetime
 
 app = Flask(__name__)
 app.config.from_object('config')
@@ -49,6 +48,11 @@ def home():
 	if not(logged_in()):
 		return redirect(url_for('index'))
 	
+	[error_msg, files] = read_files(session['user_id'])
+	return render_template("home.html", subtitle = session['username'], title = session['name'], user_id = session['user_id'], response = error_msg, files = files)
+
+@app.route('/sync')
+def sync():
 	[succedded, response] = make_request(app.config["SDK_URL_FORMAT"] % ('me/skydrive/files?access_token=%s' % session['access_token']))
 	if succedded:
 		[folder_found, file_id, error_msg] = find_app_folder(response)
@@ -58,7 +62,7 @@ def home():
 		else:
 			files = read_app_folder(file_id, session['access_token'])
 			db.update({ '_id': ObjectId(session['_id']) },  { '$set': { 'files': files } })
-		return render_template("home.html", subtitle = session['username'], title = session['name'], user_id = session['user_id'], response = error_msg, files = files)
+		return redirect(url_for('home'))
 	return error_page(response["code"], response["message"])
 
 @app.route("/user/<username>")
@@ -125,7 +129,6 @@ def read_app_folder(folder_id, access_token):
 	[succedded, response] = make_request(app.config["SDK_URL_FORMAT"] % ('%s/files?access_token=%s' % (folder_id, access_token)))
 	if succedded:
 		files = process_folder_response(response, access_token)
-		#print json.dumps(files, indent = 4)
 		return files
 	return error_page(response["code"], response["message"])
 
@@ -135,12 +138,12 @@ def process_folder_response(response, access_token):
 		return files
 	
 	for file in response["data"]:
-		#print json.dumps(file, indent = 4)
 		if file["type"] == "file" and "name" in file:
+			update_time = dateutil.parser.parse(file["updated_time"])
 			file_name, file_extension = os.path.splitext(file["name"])
 			files.append({'name': file_name, \
 				'link': file["upload_location"], \
-				'updated_time': file["updated_time"], #datetime.strftime("%Y-%d-T%H:%M", file["updated_time"]), \ #2015-01-15T20:10:00+0000
+				'updated_time': update_time.strftime("%m-%d-%Y %H:%M"), \
 				'content': read_file(file['upload_location'], access_token) })
 		elif file["type"] == "folder":
 			files += read_app_folder(file["id"], access_token)
@@ -203,7 +206,6 @@ def is_user_registered(user_id, access_token):
 	user = db.find_one({ 'user_id': user_id })
 	if user_id and access_token and user:
 		logger.info('user_id %s is already registered', user_id)
-		
 		session['_id'] = str(user['_id'])
 		session['username'] = str(user['username'])
 		session['name'] = str(user['name'])
@@ -215,6 +217,12 @@ def is_user_registered(user_id, access_token):
 def is_username_registered(username):
 	users = db.find({ 'username': username })
 	return users.count() > 0
+
+def read_files(user_id):
+	user = db.find_one({ 'user_id': user_id }, { "files": 1 })
+	if user > 0 and 'files' in user:
+		return ["", sorted(user['files'], key=lambda k: k['updated_time'])]
+	return ["There is a problem reading files.", []]
 
 def save_files(user_id, files):
 	result = db.insert({ 'user_id': user_id, 'username': username, 'name': name })
@@ -230,7 +238,10 @@ def save_user(user_id, username, name):
 
 ### ### ### ### ### Helpers ### ### ### ### ###
 def error_page(code, message):
-	return render_template("error.html", title = '%s Error' % str(code), subtitle = "Something went wrong!", message = message)
+	action_link = ""
+	if "request_token_expired" in message:
+		action_link = app.config["LOGIN_URL_FORMAT"] % (app.config["CLIENT_ID"], app.config["CLIENT_SCOPE"], app.config["REDIRECT_URI"])
+	return render_template("error.html", title = '%s Error' % str(code), subtitle = "Something went wrong!", message = message, action_link = action_link)
 
 def logged_in():
 	return ('user_id' in session) and ('access_token' in session) and (session['user_id']) and (session['access_token'])

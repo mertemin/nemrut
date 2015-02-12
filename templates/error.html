@@ -8,7 +8,9 @@
 	<div class="row">
 		<div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
 			<div class="post-preview">
-			{% if message %}
+			{% if action_link %}
+				<p class="text-center"><a class="btn btn-primary" href="{{ action_link }}" id="sync"><i class="fa fa-repeat"></i> Retry</a></p>
+			{% elif message %}
 				<p>{{ message }}</p>
 			{% else %}
 				<p>There is a problem with getting error details.</p>
