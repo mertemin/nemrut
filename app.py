@@ -48,8 +48,8 @@ def home():
 	if not(logged_in()):
 		return redirect(url_for('index'))
 	
-	[error_msg, files] = read_files(session['user_id'])
-	return render_template("home.html", subtitle = session['username'], title = session['name'], user_id = session['user_id'], response = error_msg, files = files)
+	[error_msg, user] = read_user(session['username'])
+	return render_template("home.html", subtitle = session['username'], title = session['name'], user_id = session['user_id'], response = error_msg, files = user['files'])
 
 @app.route('/sync')
 def sync():
@@ -67,9 +67,8 @@ def sync():
 
 @app.route("/user/<username>")
 def blog(username):
-	users = db.find({ 'username': username })
-	if users.count() > 0:
-		user = users[0]
+	[error_msg, user] = read_user(username)
+	if user:
 		return render_template("user.html", title = user['name'], subtitle = user['username'], username = username, files = user['files'])
 	
 	return error_page(404, "User cannot be found")
@@ -218,11 +217,11 @@ def is_username_registered(username):
 	users = db.find({ 'username': username })
 	return users.count() > 0
 
-def read_files(user_id):
-	user = db.find_one({ 'user_id': user_id }, { "files": 1 })
-	if user > 0 and 'files' in user:
-		return ["", sorted(user['files'], key=lambda k: k['updated_time'])]
-	return ["There is a problem reading files.", []]
+def read_user(username):
+	user = db.find_one({ 'username': username })
+	if user:
+		return ["", user]
+	return ["There is a problem reading files.", {}]
 
 def save_files(user_id, files):
 	result = db.insert({ 'user_id': user_id, 'username': username, 'name': name })
