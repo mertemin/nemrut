@@ -53,15 +53,14 @@ def home():
 
 @app.route('/sync')
 def sync():
-	[succedded, response] = make_request(app.config["SDK_URL_FORMAT"] % ('me/skydrive/files?access_token=%s' % session['access_token']))
+	[succedded, response] = make_request(app.config["SDK_URL_FORMAT"] % ('drive/root:/nemrut:/children?access_token=%s' % session['access_token']))
+
 	if succedded:
-		[folder_found, file_id, error_msg] = find_app_folder(response)
-		if not(folder_found):
-			create_app_folder(session['access_token'])
-			files = []
-		else:
-			files = read_app_folder(file_id, session['access_token'])
-			db.update({ '_id': ObjectId(session['_id']) },  { '$set': { 'files': files } })
+		files = process_files(response)
+		db.update({ '_id': ObjectId(session['_id']) },  { '$set': { 'files': files } })
+		return redirect(url_for('home'))
+	elif "itemNotFound" in response["message"]:
+		create_app_folder(session['access_token'])
 		return redirect(url_for('home'))
 	return error_page(response["code"], response["message"])
 
@@ -80,7 +79,8 @@ def read(username, title):
 		user = users[0]
 		for file in user['files']:
 			if file['name'] == title:
-				return render_template("post.html", content = Markup(markdown.markdown(file['content'])), title = file['name'], time = file['updated_time'], username = user['username'], subtitle = user['name'])
+				content = read_file(file["direct_link"]) if "direct_link" in file else file["content"] 
+				return render_template("post.html", content = Markup(markdown.markdown(content)), title = file['name'], time = file['updated_time'], username = user['username'], subtitle = user['name'])
 	
 	return error_page(404, "Content cannot be found")
 
@@ -94,63 +94,38 @@ def create_auth_request(request):
 	headers = {'Content-Type': 'application/x-www-form-urlencoded'}
 	return urllib2.Request(app.config["AUTH_URL"], data, headers)
 
-def find_app_folder(data):
-	found = False
-	error_msg = ""
-	file_id = ""
-	
-	if not("data" in data):
-		error_msg = "The response is malformed."
-		return [found, error_msg]
-	
-	files = data["data"]
-	for file in files:
-		if "type" in file and file["type"] == "folder" and file["name"] == app.config["NAME"]:
-			file_id = file["id"]
-			found = True
-			break
-	
-	if not(found):
-		error_msg = "Folder cannot be found."
-	return [found, file_id, error_msg]
-
 def create_app_folder(access_token):
-	data = json.dumps({'name': app.config["NAME"]})
+	logger.info('Creating the folder')
+	data = json.dumps({'name': app.config["NAME"], 'folder': {}})
 	headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer %s' % access_token}
-	post_request = urllib2.Request(app.config["SDK_URL_FORMAT"] % 'me/skydrive', data, headers)
+	post_request = urllib2.Request(app.config["SDK_URL_FORMAT"] % 'drive/root/children', data, headers)
 	
 	[succedded, response] = make_request(post_request)
+	print response
 	if succedded:
 		return redirect(url_for('home'))
 	return error_page(response["code"], response["message"])
 
-def read_app_folder(folder_id, access_token):
-	[succedded, response] = make_request(app.config["SDK_URL_FORMAT"] % ('%s/files?access_token=%s' % (folder_id, access_token)))
-	if succedded:
-		files = process_folder_response(response, access_token)
-		return files
-	return error_page(response["code"], response["message"])
-
-def process_folder_response(response, access_token):
+def process_files(response):
 	files = []
-	if not("data" in response):
+	if not("value" in response):
 		return files
 	
-	for file in response["data"]:
-		if file["type"] == "file" and "name" in file:
-			update_time = dateutil.parser.parse(file["updated_time"])
+	for file in response["value"]:
+		if "file" in file and "mimeType" in file["file"] and file["file"]["mimeType"] == "text/plain" and "name" in file:
+			update_time = dateutil.parser.parse(file["lastModifiedDateTime"])
 			file_name, file_extension = os.path.splitext(file["name"])
 			files.append({'name': file_name, \
-				'link': file["upload_location"], \
+				'direct_link': file['@content.downloadUrl'],
 				'updated_time': update_time.strftime("%m-%d-%Y %H:%M"), \
-				'content': read_file(file['upload_location'], access_token) })
-		elif file["type"] == "folder":
-			files += read_app_folder(file["id"], access_token)
+				'content': "" }) #Skip read file read_file(file['@content.downloadUrl'])
+		#elif file["folder"] == "folder":
+		#	files += read_app_folder(file["id"], access_token)
 
 	return files
 
-def read_file(file_link, access_token):
-	[succedded, response] = make_request('%s?surpress_redirects=true&access_token=%s' % (file_link, access_token), raw = True)
+def read_file(file_link):
+	[succedded, response] = make_request(file_link, raw = True)
 	if succedded:
 		return response
 	return error_page(response["code"], response["message"])
@@ -160,7 +135,7 @@ def make_request(request, raw = False):
 	try:
 		logger.info('Making a request %s', request)
 		response = urllib2.urlopen(request)
-		
+
 		if raw:
 			return [True, response.read()]
 		else:
@@ -170,7 +145,7 @@ def make_request(request, raw = False):
 		return [False, {"code": e.code, "message": e.read()}]
 
 def register(username, name, agreed):
-	logger.info('Trying to register for user_id %s, username %s and name %s', username, name)
+	logger.info('Trying to register for username %s and name %s', username, name)
 	if not(session['user_id']):
 		return [False, 'There is a problem with user account. Please try logging again by going to homepage.']
 	
@@ -189,6 +164,7 @@ def register(username, name, agreed):
 		session['name'] = name
 		
 		if save_user(session['user_id'], username, name):
+			create_app_folder(session['access_token'])
 			return [True, 'Successfully registered']
 		else:
 			return [False, 'An error occured while registering the user. Please try again later.']
