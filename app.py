@@ -119,8 +119,8 @@ def process_files(response):
 				'direct_link': file['@content.downloadUrl'],
 				'updated_time': update_time.strftime("%m-%d-%Y %H:%M"), \
 				'content': "" }) #Skip read file read_file(file['@content.downloadUrl'])
-		#elif file["folder"] == "folder":
-		#	files += read_app_folder(file["id"], access_token)
+		elif file["folder"] == "folder":
+			files += read_app_folder(file["id"], access_token)
 
 	return files
 

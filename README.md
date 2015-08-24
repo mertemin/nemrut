@@ -1,6 +1,8 @@
 # Nemrut
 Nemrut is a blog powered by OneDrive. The text and markdown files in OneDrive becomes blog posts.
 
+Check out .NET version of this repo [here](https://github.com/mertemin/nemrut-azure).
+
 ## Demo
 [Here](http://nemrutblog.herokuapp.com)
 
